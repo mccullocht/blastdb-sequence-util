@@ -1,8 +1,13 @@
 [package]
-name = "blast-oxide"
+name = "blastdb-sequence-util"
 version = "0.1.0"
 edition = "2021"
+authors = ["Trevor McCulloch <mccullocht@gmail.com>"]
+description = "Utilities for encoding nucleotide/protein sequences in BLAST database format."
+license = "MIT OR Apache-2.0"
+keywords = ["bioinformatics", "blast"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+rand = { version = "0.8.5", features = ["small_rng"] }

@@ -1,14 +1,6 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+pub use self::nucleotide::{
+    Blast8naBase, Ncbi2naBase, Ncbi8naBase, NucleotideConversionError, NucleotideSequence,
+};
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+mod nucleotide;
+pub mod protein;

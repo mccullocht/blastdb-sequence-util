@@ -1,5 +1,3 @@
-// TODO: implement FromStr for NucleotideSequence for convenience.
-// TODO: implement std::fmt::Display for NucleotideSequence
 use core::ops::Range;
 use std::convert::{From, TryFrom};
 use std::iter::{FromIterator, IntoIterator};
@@ -80,7 +78,7 @@ pub struct Ncbi8naBase(u8);
 
 impl std::fmt::Display for Ncbi8naBase {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", u8::from(self.0))
+        write!(f, "{}", self.0)
     }
 }
 
@@ -300,7 +298,7 @@ impl AmbiguityEncoder {
         } else {
             self.regions.push(AmbiguousRegion {
                 range: self.offset..(self.offset + 1),
-                base: base,
+                base,
             })
         }
 
@@ -323,7 +321,7 @@ impl AmbiguityEncoder {
         self.offset > OLD_MAX_OFFSET || self.longest_region > OLD_MAX_REGION_LEN
     }
 
-    fn to_new_format(self) -> Vec<u8> {
+    fn into_new_format(self) -> Vec<u8> {
         let mut encoded =
             Vec::with_capacity((self.regions.len() * 2 + 1) * std::mem::size_of::<u32>());
         let hdr = ((self.regions.len() as u32) * 2) | (1u32 << 31);
@@ -342,7 +340,7 @@ impl AmbiguityEncoder {
         encoded
     }
 
-    fn to_old_format(self) -> Vec<u8> {
+    fn into_old_format(self) -> Vec<u8> {
         let mut encoded = Vec::with_capacity((self.regions.len() + 1) * std::mem::size_of::<u32>());
         encoded.extend_from_slice(&(self.regions.len() as u32).to_be_bytes());
         for region in self.regions {
@@ -357,9 +355,9 @@ impl From<AmbiguityEncoder> for Vec<u8> {
         if value.regions.is_empty() {
             vec![]
         } else if value.use_new_format() {
-            value.to_new_format()
+            value.into_new_format()
         } else {
-            value.to_old_format()
+            value.into_old_format()
         }
     }
 }
@@ -442,6 +440,10 @@ impl NucleotideSequence {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// Iterate over Ncbi8na representation of sequence data.
     pub fn iter(&self) -> SequenceIter<'_, '_> {
         SequenceIter::new(&self.seq, &self.amb)
@@ -494,10 +496,10 @@ impl std::str::FromStr for NucleotideSequence {
     type Err = NucleotideConversionError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(s.as_bytes()
+        s.as_bytes()
             .iter()
             .map(|b| Ncbi8naBase::try_from(*b))
-            .collect::<Result<_, _>>()?)
+            .collect::<Result<_, _>>()
     }
 }
 
@@ -556,7 +558,7 @@ impl<'a, 'b> SequenceIter<'a, 'b> {
         let mut amb_it = AmbiguityIterator::new(amb);
         let amb_region = amb_it
             .next()
-            .unwrap_or(AmbiguousRegion::end_region(seq_it.len()));
+            .unwrap_or_else(|| AmbiguousRegion::end_region(seq_it.len()));
         Self {
             seq_it,
             amb_it,
@@ -567,7 +569,7 @@ impl<'a, 'b> SequenceIter<'a, 'b> {
     fn next_region(&mut self) -> AmbiguousRegion {
         self.amb_it
             .next()
-            .unwrap_or(AmbiguousRegion::end_region(self.seq_it.len()))
+            .unwrap_or_else(|| AmbiguousRegion::end_region(self.seq_it.len()))
     }
 }
 
@@ -576,6 +578,7 @@ impl<'a, 'b> Iterator for SequenceIter<'a, 'b> {
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
+        #[allow(clippy::iter_nth_zero)]
         self.nth(0)
     }
 
@@ -603,11 +606,7 @@ impl<'a, 'b> ExactSizeIterator for SequenceIter<'a, 'b> {}
 /// Render the sequence as an IUPAC nucleic acide sequence.
 impl std::fmt::Display for NucleotideSequence {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            self.iter().map(|b| char::from(b)).collect::<String>()
-        )
+        write!(f, "{}", self.iter().map(char::from).collect::<String>())
     }
 }
 

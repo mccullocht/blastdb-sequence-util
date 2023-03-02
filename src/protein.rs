@@ -73,12 +73,16 @@ pub struct ProteinSequence {
 impl ProteinSequence {
     /// Returns an iterator over the IUPAC amino acid representation fo the sequence.
     pub fn iter(&self) -> impl Iterator<Item = NcbiStdaaBase> + '_ {
-        self.seq.iter().copied().map(|b| NcbiStdaaBase(b))
+        self.seq.iter().copied().map(NcbiStdaaBase)
     }
 
     /// Returns the number of bases in the sequence
     pub fn len(&self) -> usize {
         self.seq.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     /// Returns the raw sequence as bytes.
@@ -101,21 +105,17 @@ impl std::str::FromStr for ProteinSequence {
     type Err = ProteinConversionError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(s.as_bytes()
+        s.as_bytes()
             .iter()
             .map(|b| NcbiStdaaBase::try_from(*b))
-            .collect::<Result<_, _>>()?)
+            .collect::<Result<_, _>>()
     }
 }
 
 /// Render the sequence as an IUPAC amino acid sequence.
 impl std::fmt::Display for ProteinSequence {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            self.iter().map(|b| char::from(b)).collect::<String>()
-        )
+        write!(f, "{}", self.iter().map(char::from).collect::<String>())
     }
 }
 
